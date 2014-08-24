@@ -48,8 +48,9 @@ module MCollective
                 workdir = File.join(@basedir, name)
                 command = "#{@new_workdir} '#{@master_repo_path.shellescape}' '#{workdir.shellescape}' '#{name}' 2>&1"
                 output = `#{command}`
-                result = $?
-                Log.debug("Executed command \"#{command}\" with return code '#{result}' and output '#{output}'")
+
+                output += submodule_update(name)
+
                 return output
 
             end
@@ -58,6 +59,7 @@ module MCollective
                 workdir = File.join(@basedir, name)
                 repo = Rugged::Repository.new(workdir)
                 repo.reset("refs/remotes/#{@upstream}/#{name}", :hard)
+                submodule_update(name)
                 return true
             end
 
@@ -100,6 +102,16 @@ module MCollective
                 end
 
                 return results
+            end
+
+            def submodule_update(name)
+                # No submodule support in rugged just yet; do things the hard way for now
+                workdir = File.join(@basedir, name)
+                pwd = Dir.pwd()
+                Dir.chdir(workdir)
+                result = `git submodule init 2>&1 && git submodule update 2>&1`
+                Dir.chdir(pwd)
+                return result
             end
 
             def validate_environment_name(name)
